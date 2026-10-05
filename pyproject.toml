@@ -1,0 +1,15 @@
+[project]
+name = "tailored-tech"
+version = "0.1.0"
+description = "A simple caching service implementation in FastAPI"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "alembic>=1.20.0",
+    "sqlalchemy>=2.1.3",
+]
+[tool.fastapi]
+entrypoint= "app.main:app"
+dependencies = [
+    "fastapi[standard]>=0.142.2",
+]
