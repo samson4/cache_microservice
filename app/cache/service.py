@@ -11,13 +11,31 @@ class CacheService:
    
 
 
-def _serialize_request(self, cache_input: CacheInput) -> str:
-    return json.dumps(
-        cache_input.model_dump(),
-        sort_keys=True,
-        separators=(",", ":"),
-        ensure_ascii=False,
-    )
+    def _serialize_request(self, cache_input: CacheInput) -> str:
+        return json.dumps(
+            cache_input.model_dump(),
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        )
+    def _get_or_transform(self, db: Session, input_text: str) -> str:
+        cached_transformation = (
+            db.query(Cache).filter(Cache.input_text == input_text).first()
+        )
+
+        if cached_transformation is not None:
+            return cached_transformation.output_text
+
+        output_text = self._transformer(input_text)
+
+        db.add(
+            Cache(
+                input_text=input_text,
+                output_text=output_text,
+            )
+        )
+        db.flush()
+        return output_text    
     def create_cache(self, db: Session, cache_input: CacheInput) -> dict:
         request_data = self._serialize_request(cache_input)
         # first layer of caching: check if the request_data already exists in the database
@@ -25,14 +43,21 @@ def _serialize_request(self, cache_input: CacheInput) -> str:
         
         if cache_result:
             return {"id": cache_result.id}
-        if not len(cache_input.list_1) == len(cache_input.list_2):
-            raise HTTPException(status_code=400, detail="Input lists must have the same length")
+        output_parts: list[str] = []    
         for i, j in zip(cache_input.list_1, cache_input.list_2):
-           pass
+           output_parts.append(self._get_or_transform(db, i))
+           output_parts.append(self._get_or_transform(db, j))
+        output_text = ", ".join(output_parts)
+        # second layer of caching: store the request_data and output_text in the database
+        payload_cache = PayloadCache(request_data=request_data, output=output_text)
+        db.add(payload_cache)
+        db.commit()
+        db.refresh(payload_cache)
+        return {"id": payload_cache.id}
             
 
 
-    def get_cache(self, db: Session, cache_id: int) -> PayloadCache:
+    def get_cache(self, db: Session, cache_id: str) -> PayloadCache:
         query = db.query(PayloadCache).filter(PayloadCache.id == cache_id)
         
         result = query.first()
@@ -48,10 +73,9 @@ def _serialize_request(self, cache_input: CacheInput) -> str:
     #         list_3.append(j.upper())
             
     #     return ", ".join(list_3) 
-
-    def _transformer(self, str_input: str) -> str:
-        
-        return str_input.upper()
+    def _transformer(self, input_text: str) -> str:
+       
+        return input_text.upper()
 
 
 cache_service = CacheService()    

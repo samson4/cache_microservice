@@ -7,7 +7,7 @@ from app.mixins.timestamp import TimestampMixin
 
 class Cache(Base, UniqueIDMixin, TimestampMixin):
     __tablename__ = "transformation_cache"
-    input_text = Column(String, nullable=False)
+    input_text = Column(String, nullable=False, unique=True)
     output_text = Column(String, nullable=False)
 
 
