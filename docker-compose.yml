@@ -1,0 +1,17 @@
+name: payload-cache-service
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: docker/dockerfile
+    env_file:
+      - .env
+    ports:
+      - "${API_PORT}:${API_PORT}"
+    volumes:
+      - cache-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  cache-data:

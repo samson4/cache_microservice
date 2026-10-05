@@ -7,12 +7,13 @@ class Settings(BaseSettings):
     #App
     APP_NAME: str = "Simple Cache Service"
     API_V1_PREFIX: str = "/api/v1"
+    API_PORT: int
 
     #Database
     DATABASE_URL: str
-    DATABASE_POOL_SIZE: int = 5
-    DATABASE_MAX_OVERFLOW: int = 10
+    DATABASE_POOL_SIZE: int
+    DATABASE_MAX_OVERFLOW: int
 
 
 
-settings = Settings()    
+settings = Settings()
