@@ -42,3 +42,9 @@ jobs:
 
       - name: Run tests
         run: uv run python -m unittest discover -s tests -v
+        env:
+          API_PORT: "8000"
+          DATABASE_URL: sqlite:///${{ runner.temp }}/payload-cache-ci.db
+          DATABASE_POOL_SIZE: "5"
+          DATABASE_MAX_OVERFLOW: "10"
+          DATABASE_BUSY_TIMEOUT: "5"
