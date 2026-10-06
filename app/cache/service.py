@@ -1,6 +1,5 @@
 import json
 
-from fastapi import HTTPException
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
@@ -11,6 +10,10 @@ from app.cache.schemas import CacheInput
 
 class CacheBusyError(Exception):
     """Raised when SQLite cannot obtain its writer lock in time."""
+
+
+class PayloadNotFoundError(Exception):
+    """Raised when a requested payload does not exist."""
 
 
 class CacheService:
@@ -97,7 +100,7 @@ class CacheService:
 
         result = query.first()
         if result is None:
-            raise HTTPException(status_code=404, detail="Payload not found")
+            raise PayloadNotFoundError(cache_id)
 
         return result
 

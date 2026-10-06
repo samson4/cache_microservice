@@ -1,14 +1,13 @@
 import unittest
 from unittest.mock import patch
 
-from fastapi import HTTPException
 from pydantic import ValidationError
 from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import sessionmaker
 
 from app.cache.models import Cache
 from app.cache.schemas import CacheInput
-from app.cache.service import CacheService
+from app.cache.service import CacheService, PayloadNotFoundError
 from app.core.base import Base
 
 
@@ -100,10 +99,10 @@ class CacheServiceTests(unittest.TestCase):
         self.assertNotEqual(first["id"], reversed_request["id"])
 
     def test_missing_payload_raises_not_found(self) -> None:
-        with self.assertRaises(HTTPException) as error:
+        with self.assertRaises(PayloadNotFoundError) as error:
             self.service.get_cache(self.db, "missing-id")
 
-        self.assertEqual(error.exception.status_code, 404)
+        self.assertEqual(error.exception.args, ("missing-id",))
 
 
 if __name__ == "__main__":
