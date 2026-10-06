@@ -1,12 +1,14 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help build run test stop down clean logs
+.PHONY: help build run test lint format stop down clean logs
 
 help: ## Show available commands
 	@printf "Available commands:\n"
 	@printf "  make build  Build the application image\n"
 	@printf "  make run    Build and run the application\n"
 	@printf "  make test   Run the unit tests in a container\n"
+	@printf "  make lint   Check Python linting and formatting\n"
+	@printf "  make format Format the Python codebase with Ruff\n"
 	@printf "  make stop   Stop application containers\n"
 	@printf "  make down   Stop and remove application containers\n"
 	@printf "  make clean  Remove containers, images, and persisted data\n"
@@ -21,6 +23,14 @@ run: ## Build and run the application
 test: ## Run the unit tests in a container
 	docker build --target test --tag payload-cache-service-test --file docker/dockerfile .
 	docker run --rm --env-file .env payload-cache-service-test
+
+lint: ## Check Python linting and formatting
+	uv run ruff format --check .
+	uv run ruff check .
+
+format: ## Format the Python codebase and fix safe lint violations
+	uv run ruff check --fix .
+	uv run ruff format .
 
 stop: ## Stop application containers
 	docker compose stop

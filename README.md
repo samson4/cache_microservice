@@ -43,6 +43,7 @@ The application expects these settings:
 DATABASE_URL=sqlite:///./data/payload_cache.db
 DATABASE_POOL_SIZE=5
 DATABASE_MAX_OVERFLOW=10
+DATABASE_BUSY_TIMEOUT=5
 API_PORT=8000
 ```
 
@@ -75,6 +76,10 @@ With the example configuration, the service is available at:
 - API documentation: `http://127.0.0.1:8000/docs`
 - Health check: `http://127.0.0.1:8000/health`
 - OpenAPI document: `http://127.0.0.1:8000/openapi.json`
+
+The health endpoint executes a lightweight database query. It returns HTTP `200`
+with `{"status":"ok"}` when the database responds and HTTP `503` when the database
+is unavailable.
 
 Stop the containers without removing them:
 
@@ -132,6 +137,18 @@ curl http://127.0.0.1:8000/payload/89ebc229-d5fa-414c-961f-6b812c915fcc
 
 Submitting the same ordered lists again returns the same identifier. Strings already
 present in the transformation cache are reused instead of being transformed again.
+
+### Concurrent requests
+
+For SQLite, payload creation starts with `BEGIN IMMEDIATE` before checking either
+cache. This ensures that simultaneous requests cannot transform the same missing
+string twice: the second writer waits, then reads the results committed by the first.
+If the writer lock cannot be obtained within `DATABASE_BUSY_TIMEOUT`, the API returns
+HTTP `503` with `Retry-After: 1`.
+
+This deliberately serializes payload creation, including requests for unrelated
+strings. It is a small and predictable tradeoff for this single-host SQLite service;
+a higher-throughput distributed version would need different coordination.
 
 ## CLI usage
 
@@ -219,6 +236,21 @@ Run them locally:
 ```bash
 uv run python -m unittest discover -s tests -v
 ```
+
+Check linting and formatting locally:
+
+```bash
+make lint
+```
+
+Apply Ruff's safe lint fixes and formatter:
+
+```bash
+make format
+```
+
+GitHub Actions runs the formatting check, linter, and full test suite on every push
+and pull request.
 
 The tests cover the FastAPI create/read endpoints, transformation and interleaving,
 full and partial cache hits, payload identifier reuse, validation, missing payloads,

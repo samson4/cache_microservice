@@ -3,10 +3,11 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.cache.service import CacheService
+from app.cache.service import CacheBusyError, CacheService
 from app.core.base import Base
 from app.core.db import get_db
 from app.main import app
@@ -98,6 +99,36 @@ class ApiTests(unittest.TestCase):
             ).status_code,
             404,
         )
+
+    def test_writer_timeout_returns_retryable_service_unavailable(self) -> None:
+        with patch.object(
+            self.service,
+            "create_cache",
+            side_effect=CacheBusyError,
+        ):
+            response = self.client.post(
+                "/payload",
+                json={"list_1": ["one"], "list_2": ["two"]},
+            )
+
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.headers["Retry-After"], "1")
+        self.assertEqual(response.json(), {"detail": "Cache is busy; retry later"})
+
+    def test_health_returns_service_unavailable_when_database_fails(self) -> None:
+        class UnavailableDatabase:
+            def execute(self, _statement):
+                raise SQLAlchemyError("database unavailable")
+
+        def unavailable_database():
+            yield UnavailableDatabase()
+
+        app.dependency_overrides[get_db] = unavailable_database
+
+        response = self.client.get("/health")
+
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.json(), {"detail": "Database unavailable"})
 
 
 if __name__ == "__main__":

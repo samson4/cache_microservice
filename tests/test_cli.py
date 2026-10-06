@@ -7,8 +7,7 @@ from tempfile import TemporaryDirectory
 import httpx
 from pydantic import ValidationError
 
-from app.cli import CliSettings, PAYLOAD_ENDPOINT, load_input, run
-
+from app.cli import PAYLOAD_ENDPOINT, CliSettings, load_input, run
 
 REQUEST_BODY = {
     "list_1": ["first string"],
@@ -112,17 +111,11 @@ class CliTests(unittest.TestCase):
         ) as client:
             run(settings, payload, client, output)
 
-        records = [
-            json.loads(line)
-            for line in output.getvalue().splitlines()
-        ]
+        records = [json.loads(line) for line in output.getvalue().splitlines()]
         self.assertEqual([record["iteration"] for record in records], [1, 2])
         self.assertEqual({record["id"] for record in records}, {payload_id})
         self.assertTrue(
-            all(
-                record["output"] == "FIRST STRING, OTHER STRING"
-                for record in records
-            )
+            all(record["output"] == "FIRST STRING, OTHER STRING" for record in records)
         )
         self.assertEqual(
             requests,

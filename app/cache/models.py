@@ -15,4 +15,3 @@ class PayloadCache(Base, UniqueIDMixin, TimestampMixin):
     __tablename__ = "payload_cache"
     request_data = Column(Text, nullable=False, unique=True)
     output = Column(String, nullable=False)
-    

@@ -2,7 +2,7 @@ import json
 import sys
 from contextlib import ExitStack
 from pathlib import Path
-from typing import Annotated, Self, TextIO
+from typing import Self, TextIO
 
 import httpx
 from pydantic import AliasChoices, Field, HttpUrl, ValidationError, model_validator
@@ -10,7 +10,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict, SettingsError
 
 from app.cache.schemas import CacheCreateResponse, CacheInput, CacheRead
 from app.core.config import settings as app_settings
-
 
 PAYLOAD_ENDPOINT = "/payload"
 
@@ -39,8 +38,9 @@ class CliSettings(BaseSettings):
         validation_alias=AliasChoices("host", "H"),
         description="Server URL. Use -H because -h is reserved for help.",
     )
-    repeat: Annotated[int, Field(gt=0)] = Field(
+    repeat: int = Field(
         default=1,
+        gt=0,
         validation_alias=AliasChoices("repeat", "r"),
         description="Number of POST and GET iterations.",
     )
@@ -66,8 +66,15 @@ class CliSettings(BaseSettings):
             raise ValueError("--input and --json are mutually exclusive")
         if self.input_file == "" or self.output_file == "":
             raise ValueError("Input and output file names must not be empty")
-        if self.host.username or self.host.password or self.host.query or self.host.fragment:
-            raise ValueError("--host must not contain credentials, a query, or a fragment")
+        if (
+            self.host.username
+            or self.host.password
+            or self.host.query
+            or self.host.fragment
+        ):
+            raise ValueError(
+                "--host must not contain credentials, a query, or a fragment"
+            )
         if self.host.path not in (None, "/"):
             raise ValueError("--host must not contain a path")
         return self

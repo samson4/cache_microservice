@@ -12,6 +12,11 @@ dependencies = [
     "sqlalchemy>=2.1.3",
 ]
 
+[dependency-groups]
+dev = [
+    "ruff>=0.14.0",
+]
+
 [project.scripts]
 cache-cli = "app.cli:main"
 
@@ -24,3 +29,13 @@ include = ["app*"]
 
 [tool.fastapi]
 entrypoint = "app.main:app"
+
+[tool.ruff]
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["B", "E4", "E7", "E9", "F", "I", "SIM", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+"app/cache/router.py" = ["B008"]
+"app/main.py" = ["B008"]
