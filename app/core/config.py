@@ -6,7 +6,6 @@ class Settings(BaseSettings):
 
     #App
     APP_NAME: str = "Simple Cache Service"
-    API_V1_PREFIX: str = "/api/v1"
     API_PORT: int
 
     #Database

@@ -12,7 +12,7 @@ from app.cache.schemas import CacheCreateResponse, CacheInput, CacheRead
 from app.core.config import settings as app_settings
 
 
-PAYLOAD_ENDPOINT = f"{app_settings.API_V1_PREFIX}/cache/payload"
+PAYLOAD_ENDPOINT = "/payload"
 
 
 def default_host() -> HttpUrl:

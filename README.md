@@ -74,7 +74,7 @@ With the example configuration, the service is available at:
 
 - API documentation: `http://127.0.0.1:8000/docs`
 - Health check: `http://127.0.0.1:8000/health`
-- OpenAPI document: `http://127.0.0.1:8000/api/v1/openapi.json`
+- OpenAPI document: `http://127.0.0.1:8000/openapi.json`
 
 Stop the containers without removing them:
 
@@ -102,7 +102,7 @@ results.
 Create a payload:
 
 ```bash
-curl -X POST http://127.0.0.1:8000/api/v1/cache/payload \
+curl -X POST http://127.0.0.1:8000/payload \
   -H 'Content-Type: application/json' \
   -d '{
     "list_1": ["first string", "second string"],
@@ -121,7 +121,7 @@ Example response:
 Retrieve the generated payload:
 
 ```bash
-curl http://127.0.0.1:8000/api/v1/cache/payload/89ebc229-d5fa-414c-961f-6b812c915fcc
+curl http://127.0.0.1:8000/payload/89ebc229-d5fa-414c-961f-6b812c915fcc
 ```
 
 ```json
@@ -208,7 +208,7 @@ uv run cache-cli --help
 
 ## Tests
 
-Run all tests inside the application image:
+Build the dedicated test stage and run all tests in its isolated container:
 
 ```bash
 make test
@@ -220,8 +220,11 @@ Run them locally:
 uv run python -m unittest discover -s tests -v
 ```
 
-The tests cover transformation and interleaving, cache reuse, payload identifier
-reuse, validation, missing payloads, CLI parsing, and repeated CLI requests.
+The tests cover the FastAPI create/read endpoints, transformation and interleaving,
+full and partial cache hits, payload identifier reuse, validation, missing payloads,
+empty and Unicode input, CLI parsing, file/stdin input, and repeated CLI requests.
+The test stage is separate from the final runtime stage, so test files are not shipped
+in the production image.
 
 ## Project structure
 

@@ -19,8 +19,8 @@ run: ## Build and run the application
 	docker compose up --build --detach
 
 test: ## Run the unit tests in a container
-	docker compose build
-	docker compose run --rm api python -m unittest discover -s tests -v
+	docker build --target test --tag payload-cache-service-test --file docker/dockerfile .
+	docker run --rm --env-file .env payload-cache-service-test
 
 stop: ## Stop application containers
 	docker compose stop

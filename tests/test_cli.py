@@ -1,6 +1,8 @@
 import io
 import json
 import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import httpx
 from pydantic import ValidationError
@@ -54,6 +56,37 @@ class CliTests(unittest.TestCase):
 
         with self.assertRaises(ValidationError):
             load_input(settings, io.StringIO())
+
+    def test_loads_input_from_file_and_standard_input(self) -> None:
+        with TemporaryDirectory() as directory:
+            input_path = Path(directory) / "payload.json"
+            input_path.write_text(json.dumps(REQUEST_BODY), encoding="utf-8")
+            file_settings = CliSettings(
+                _cli_parse_args=["--input", str(input_path)],
+            )
+            stdin_settings = CliSettings(_cli_parse_args=["--input", "-"])
+
+            from_file = load_input(file_settings, io.StringIO())
+            from_stdin = load_input(
+                stdin_settings,
+                io.StringIO(json.dumps(REQUEST_BODY)),
+            )
+
+        self.assertEqual(from_file.model_dump(), REQUEST_BODY)
+        self.assertEqual(from_stdin.model_dump(), REQUEST_BODY)
+
+    def test_rejects_invalid_cli_options(self) -> None:
+        invalid_options = [
+            ["--repeat", "0"],
+            ["--repeat", "not-a-number"],
+            ["--host", "http://user:password@localhost"],
+            ["--host", "http://localhost/api"],
+            ["--output", ""],
+        ]
+
+        for options in invalid_options:
+            with self.subTest(options=options), self.assertRaises(ValidationError):
+                CliSettings(_cli_parse_args=options)
 
     def test_repeat_creates_and_reads_payload(self) -> None:
         payload_id = "794ea65f-938d-4f04-84bc-f22245ef3780"

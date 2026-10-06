@@ -71,6 +71,34 @@ class CacheServiceTests(unittest.TestCase):
         with self.assertRaises(ValidationError):
             CacheInput(list_1=["one"], list_2=[])
 
+    def test_handles_empty_and_unicode_inputs(self) -> None:
+        empty = self.service.create_cache(
+            self.db,
+            CacheInput(list_1=[], list_2=[]),
+        )
+        unicode_payload = self.service.create_cache(
+            self.db,
+            CacheInput(list_1=["straße"], list_2=["привет"]),
+        )
+
+        self.assertEqual(self.service.get_cache(self.db, empty["id"]).output, "")
+        self.assertEqual(
+            self.service.get_cache(self.db, unicode_payload["id"]).output,
+            "STRASSE, ПРИВЕТ",
+        )
+
+    def test_different_request_order_gets_a_different_identifier(self) -> None:
+        first = self.service.create_cache(
+            self.db,
+            CacheInput(list_1=["one"], list_2=["two"]),
+        )
+        reversed_request = self.service.create_cache(
+            self.db,
+            CacheInput(list_1=["two"], list_2=["one"]),
+        )
+
+        self.assertNotEqual(first["id"], reversed_request["id"])
+
     def test_missing_payload_raises_not_found(self) -> None:
         with self.assertRaises(HTTPException) as error:
             self.service.get_cache(self.db, "missing-id")

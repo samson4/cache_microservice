@@ -8,8 +8,6 @@ from app.cache.models import Cache, PayloadCache
 class CacheService:
     def __init__(self):
         pass
-   
-
 
     def _serialize_request(self, cache_input: CacheInput) -> str:
         return json.dumps(
