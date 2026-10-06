@@ -250,7 +250,10 @@ make format
 ```
 
 GitHub Actions runs the formatting check, linter, and full test suite on every push
-and pull request.
+and pull request. After those checks pass, it also builds the production image, starts
+the container, waits for its database-backed health endpoint, and verifies a complete
+create/read request. The test suite includes an Alembic smoke test that applies every
+migration to a fresh SQLite database and confirms it reaches the current schema head.
 
 The tests cover the FastAPI create/read endpoints, transformation and interleaving,
 full and partial cache hits, payload identifier reuse, validation, missing payloads,

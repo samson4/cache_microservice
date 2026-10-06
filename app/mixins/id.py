@@ -1,10 +1,8 @@
 import uuid
 
 from sqlalchemy import Column, String
-from sqlalchemy.orm import declarative_mixin
 
 
-@declarative_mixin
 class UniqueIDMixin:
     """
     Mixin to add a unique ID to a SQLAlchemy model.

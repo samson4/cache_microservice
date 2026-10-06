@@ -48,3 +48,60 @@ jobs:
           DATABASE_POOL_SIZE: "5"
           DATABASE_MAX_OVERFLOW: "10"
           DATABASE_BUSY_TIMEOUT: "5"
+
+  docker:
+    name: Docker smoke test
+    needs: quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build runtime image
+        run: docker build --tag payload-cache-service:ci --file docker/dockerfile .
+
+      - name: Start container
+        run: |
+          docker run --detach --name payload-cache-ci \
+            --publish 127.0.0.1:8000:8000 \
+            --env API_PORT=8000 \
+            --env DATABASE_URL=sqlite:///./data/payload_cache.db \
+            --env DATABASE_POOL_SIZE=5 \
+            --env DATABASE_MAX_OVERFLOW=10 \
+            --env DATABASE_BUSY_TIMEOUT=5 \
+            payload-cache-service:ci
+
+      - name: Verify API through the container
+        run: |
+          curl --fail --silent --show-error \
+            --retry 30 --retry-delay 2 --retry-all-errors \
+            http://127.0.0.1:8000/health \
+            --output /tmp/health.json
+
+          curl --fail --silent --show-error \
+            --request POST \
+            --header 'Content-Type: application/json' \
+            --data '{"list_1":["hello"],"list_2":["world"]}' \
+            http://127.0.0.1:8000/payload \
+            --output /tmp/created-payload.json
+
+          payload_id=$(python3 -c \
+            "import json; print(json.load(open('/tmp/created-payload.json'))['id'])")
+
+          curl --fail --silent --show-error \
+            "http://127.0.0.1:8000/payload/${payload_id}" \
+            --output /tmp/read-payload.json
+
+          python3 -c \
+            "import json; assert json.load(open('/tmp/health.json')) == {'status': 'ok'}; assert json.load(open('/tmp/read-payload.json')) == {'output': 'HELLO, WORLD'}"
+
+      - name: Show container logs on failure
+        if: failure()
+        run: docker logs payload-cache-ci || true
+
+      - name: Stop container
+        if: always()
+        run: docker rm --force payload-cache-ci || true
